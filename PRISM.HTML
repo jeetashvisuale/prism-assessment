@@ -653,9 +653,13 @@ function finish(){
   rec["Constructs Measured"]=measured;
   rec["Assessment Duration"]=durMin+" min";
   rec["Assessment Version"]=VERSION;
-  rec["Attempt"]=getResults().filter(r=>r["Employee ID"]===S.emp.id).length+1;  // 1, 2, 3 …
+  rec["Attempt"]=getResults().filter(r=>r["Employee ID"]===S.emp.id).length+1;
   saveResult(rec);
-  saveReassess(getReassess().filter(id=>id!==S.emp.id));   // one-time reassessment grant is now used
+  saveReassess(getReassess().filter(id=>id!==S.emp.id));
+
+  // ── NEW: send this record to the central Google Sheet ──
+  submitToCloud(rec);
+
   S=null;
   setTag("Completed");
   document.getElementById('app').innerHTML=`<div class="done">
@@ -667,6 +671,21 @@ function finish(){
     <p>The HR Department will review your assessment as part of the overall talent assessment process.</p>
     <div class="close">You may now close this window.</div>
   </div>`;
+}
+
+// ── NEW: add this as a separate function anywhere in the same <script> block ──
+function submitToCloud(rec){
+  const SHEET_URL = "https://script.google.com/macros/s/AKfycbzK6vJYiY1DVfR0KzT_vKtE6s8wx2H01BpF24EK6bslTFTEu9bjKDbE9lCqhjpOrfecDQ/exec"; // from Step 2.8
+  const SECRET = "PRISM-Tripack-2026-x7Kq";                  // must match the Apps Script check
+
+  fetch(SHEET_URL, {
+    method: "POST",
+    mode: "no-cors",  // Apps Script won't return a readable response; that's expected
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ ...rec, secret: SECRET })
+  }).catch(err=>{
+    console.error("Cloud submit failed — local copy is still safe:", err);
+  });
 }
 
 /* ============================ EMPLOYEE SHELL ============================ */
